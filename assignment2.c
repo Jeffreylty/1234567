@@ -15,16 +15,17 @@
 // Assignment: You need to implement the following two functions.
 
 static int global_max =0;
+int check_pred(int * visted, int i);
+int check_succ(int * visted, int i);
 
-int[] asap(){
-	int as[NUM_TASKS];
+int* asap(int* as){
 	int visited[NUM_TASKS];
 	for(int i = 0; i< NUM_TASKS ; i++){
-		as[NUM_TASKS] == 1;
+		as[i] = 1;
 		visited[i] =1;
 		for (int j =0; j< NUM_TASKS ; j++){
 			if(workloadDependencies[i][j] == 1){
-				as[NUM_TASKS] == 0;
+				as[i] = 0;
 				visited[i] =0;
 				break;
 			}
@@ -55,15 +56,14 @@ int[] asap(){
 }
 
 
-int[] alap(){
-	int al[NUM_TASKS];
+int* alap(int * al){
 	int visited[NUM_TASKS];
 	for(int i = 0; i< NUM_TASKS ; i++){
-		al[NUM_TASKS] == global_max;
+		al[i] = global_max;
 		visited[i] =1;
 		for (int j =0; j< NUM_TASKS ; j++){
 			if(workloadDependencies[j][i] == 1){
-				al[NUM_TASKS] == 0;
+				al[i] = 0;
 				visited[i] =0;
 				break;
 			}
@@ -78,7 +78,7 @@ int[] alap(){
 				int min = 0;
 				for (int j =0; j< NUM_TASKS; j++){
 					if(workloadDependencies[j][i] == 1){
-						min = min <= as[j] ? min : as[j];
+						min = min <= al[j] ? min : al[j];
 					}	
 				}
 				al[i] = min-1;
@@ -88,21 +88,21 @@ int[] alap(){
 		}
 		if(vst == 0) break;
 	}
-	return as;
+	return al;
 }
 
-int check_pred(int [] visted, int i){
+int check_pred(int * visted, int i){
 	for(int j =0 ; j< NUM_TASKS; j++){
-		if( workloadDependencies[i][j] == 1 && visited[j]==0){
+		if( workloadDependencies[i][j] == 1 && visted[j]==0){
 			return 0;
 		}
 	}
 	return 1;
 }
 
-int check_succ(int [] visted, int i){
+int check_succ(int * visted, int i){
 	for(int j =0 ; j< NUM_TASKS; j++){
-		if( workloadDependencies[j][i] == 1 && visited[j]==0){
+		if( workloadDependencies[j][i] == 1 && visted[j]==0){
 			return 0;
 		}
 	}
@@ -133,47 +133,49 @@ void learn_workloads(SharedVariable *v)
 	long long start, end;
 
 	start = get_current_time_us();
-	thread_button();
+	thread_button(v);
 	end = get_current_time_us();
 	v->workload[0] = end - start;
 
 	start = get_current_time_us();
-	thread_big();
+	thread_big(v);
 	end = get_current_time_us();
 	v->workload[1] = end - start;
 
 	start = get_current_time_us();
-	thread_encoder();
+	thread_encoder(v);
 	end = get_current_time_us();
 	v->workload[2] = end - start;
 
 	start = get_current_time_us();
-	thread_obstacle();
+	thread_obstacle(v);
 	end = get_current_time_us();
 	v->workload[3] = end - start;
 
 	start = get_current_time_us();
-	thread_twocolor();
+	thread_twocolor(v);
 	end = get_current_time_us();
 	v->workload[4] = end - start;
 
 	start = get_current_time_us();
-	thread_rgbcolor();
+	thread_rgbcolor(v);
 	end = get_current_time_us();
 	v->workload[5] = end - start;
 
 	start = get_current_time_us();
-	thread_aled();
+	thread_aled(v);
 	end = get_current_time_us();
 	v->workload[6] = end - start;
 
 	start = get_current_time_us();
-	thread_buzzer();
+	thread_buzzer(v);
 	end = get_current_time_us();
 	v->workload[7] = end - start;
 
-	int [] as = asap();
-	int [] al = alap();
+	int asa[NUM_TASKS];
+	int ala[NUM_TASKS];
+	int * as = asap(asa);
+	int * al = alap(ala);
 	for(int i=0; i< NUM_TASKS ;i++){
 		v->mobil[i] = al[i] - as[i];
 	}
@@ -209,13 +211,13 @@ TaskSelection select_task(SharedVariable *sv, const int *aliveTasks, long long i
 	// It selects a next thread using aliveTasks.
 
 	int sets[NUM_TASKS];
-	for (i = 0; i < NUM_TASKS; i++){
+	for (int i = 0; i < NUM_TASKS; i++){
 		if (aliveTasks[i] == 1){
 			sets[i] == 1;
 			// Check for dependency
 			for (int j = 0; j < NUM_TASKS; j++){
 				if (workloadDependencies[i][j] == 1 && aliveTasks[j] == 1){
-					sets[i] == 0;
+					sets[i] = 0;
 				}
 			}
 		}
@@ -239,6 +241,7 @@ TaskSelection select_task(SharedVariable *sv, const int *aliveTasks, long long i
 	sel.task = index; // The thread ID which will be scheduled. i.e., 0(BUTTON) ~ 7(BUZZER)
 	sel.freq = 1;			   // Request the maximum frequency (if you want the minimum frequency, use 0 instead.)
 
+	printDBG("Schedule: %d\n", index);
 	return sel;
 }
 
