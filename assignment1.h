@@ -39,14 +39,14 @@
 // If needed, you can add anything in this structure.
 typedef struct shared_variable {
 	int bProgramExit; // Once it is set to 1, the program will be terminated.
-	int pause;
+	int state;
 	int bigAudio;
 	int obstacle;
 	int rotary;
 	int pinLieter;
 
-	int workload[NUM_TASKS];
-	int mobil[NUM_TASKS];
+	int workload[8];
+	int mobil[8];
 } SharedVariable;
 
 
