@@ -18,7 +18,7 @@ static int global_max =0;
 int check_pred(int * visted, int i);
 int check_succ(int * visted, int i);
 
-int* asap(int* as){
+void asap(int* as){
 	int visited[NUM_TASKS];
 	for(int i = 0; i< NUM_TASKS ; i++){
 		as[i] = 1;
@@ -52,11 +52,11 @@ int* asap(int* as){
 		}
 		if(vst == 0) break;
 	}
-	return as;
+	return;
 }
 
 
-int* alap(int * al){
+void alap(int * al){
 	int visited[NUM_TASKS];
 	for(int i = 0; i< NUM_TASKS ; i++){
 		al[i] = global_max;
@@ -75,7 +75,7 @@ int* alap(int * al){
 		vst =0;
 		for(int i = 0; i< NUM_TASKS ; i++){
 			if(visited[i] ==0 && check_succ(visited,i) ==1){
-				int min = 0;
+				int min = global_max;
 				for (int j =0; j< NUM_TASKS; j++){
 					if(workloadDependencies[j][i] == 1){
 						min = min <= al[j] ? min : al[j];
@@ -88,7 +88,7 @@ int* alap(int * al){
 		}
 		if(vst == 0) break;
 	}
-	return al;
+	return;
 }
 
 int check_pred(int * visted, int i){
@@ -174,10 +174,10 @@ void learn_workloads(SharedVariable *v)
 
 	int asa[NUM_TASKS];
 	int ala[NUM_TASKS];
-	int * as = asap(asa);
-	int * al = alap(ala);
+	asap(asa);
+	alap(ala);
 	for(int i=0; i< NUM_TASKS ;i++){
-		v->mobil[i] = al[i] - as[i];
+		v->mobil[i] = ala[i] - asa[i];
 	}
 }
 
@@ -210,28 +210,25 @@ TaskSelection select_task(SharedVariable *sv, const int *aliveTasks, long long i
 	// Sample scheduler: Round robin
 	// It selects a next thread using aliveTasks.
 
-	int sets[NUM_TASKS];
+	int valid;
+	int mob = 1000;
+	int index =0;
 	for (int i = 0; i < NUM_TASKS; i++){
 		if (aliveTasks[i] == 1){
-			sets[i] == 1;
+			valid = 1;
 			// Check for dependency
 			for (int j = 0; j < NUM_TASKS; j++){
 				if (workloadDependencies[i][j] == 1 && aliveTasks[j] == 1){
-					sets[i] = 0;
+					valid = 0;
+					break;
 				}
 			}
-		}
-	}
-
-	int index = 0;
-	int mob = 100000; 
-	for(int i=0 ; i< NUM_TASKS; i++){
-		if(sets[i] ==1){
-			if (sv -> mobil[i] < mob){
-				index = i;
-				mob = sv -> mobil[i];
-			}else if(sv -> mobil[i] == mob){
-				index = workloadDeadlines[i] < workloadDeadlines[index] ? i : index;
+			if(valid ==1 ){
+				if(sv -> mobil[i] < mob){
+					index =i;
+				}else if(sv -> mobil[i] == mob){
+				 index = workloadDeadlines[i] < workloadDeadlines[index] ? i : index;	
+				}
 			}
 		}
 	}
@@ -239,9 +236,11 @@ TaskSelection select_task(SharedVariable *sv, const int *aliveTasks, long long i
 	// The retun value can be specified like this:
 	TaskSelection sel;
 	sel.task = index; // The thread ID which will be scheduled. i.e., 0(BUTTON) ~ 7(BUZZER)
-	sel.freq = 1;			   // Request the maximum frequency (if you want the minimum frequency, use 0 instead.)
-
-	printDBG("Schedule: %d\n", index);
+	long long tim = get_scheduler_elapsed_time_us();
+	// Request the maximum frequency (if you want the minimum frequency, use 0 instead.)
+	if(sv->workload[index] + tim < workloadDeadlines[index]){
+		sel.freq =0;
+	}else{sel.freq=1;}	
 	return sel;
 }
 
