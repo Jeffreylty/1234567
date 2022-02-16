@@ -131,6 +131,7 @@ void learn_workloads(SharedVariable *v)
 	// long long curTime = get_current_time_us();
 
 	long long start, end;
+	set_by_min_freq();
 
 	start = get_current_time_us();
 	thread_button(v);
